@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import ClaimForm, { ClaimData } from '@/components/ClaimForm';
 import ImageUploader, { UploadedImage } from '@/components/ImageUploader';
 import DamageAssessment, { AssessmentResult } from '@/components/DamageAssessment';
 import AgentReview, { FinalAssessment } from '@/components/AgentReview';
 import ClaimConfirmation from '@/components/ClaimConfirmation';
+import { recordFeedback } from '@/lib/feedbackLoop';
 
 type WorkflowStep = 'claim-form' | 'upload' | 'assessment' | 'review' | 'confirmation';
 type AIMode = 'live' | 'simulated';
@@ -17,6 +18,9 @@ export default function Home() {
   const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
   const [finalAssessment, setFinalAssessment] = useState<FinalAssessment | null>(null);
   const [aiMode, setAIMode] = useState<AIMode>('live');
+
+  // Track timing for feedback loop
+  const assessmentStartTime = useRef<number>(0);
 
   const steps: { key: WorkflowStep; label: string }[] = [
     { key: 'claim-form', label: 'Claim Info' },
@@ -40,11 +44,93 @@ export default function Home() {
 
   const handleAssessmentComplete = (result: AssessmentResult) => {
     setAssessment(result);
+    assessmentStartTime.current = Date.now(); // Start timing agent review
     setCurrentStep('review');
   };
 
   const handleApproval = (final: FinalAssessment) => {
     setFinalAssessment(final);
+
+    // Record feedback for continuous learning
+    if (assessment) {
+      const reviewTimeSeconds = (Date.now() - assessmentStartTime.current) / 1000;
+
+      recordFeedback({
+        claimId: assessment.claimId,
+        aiAssessment: {
+          damages: assessment.damages.map(d => ({
+            area: d.area,
+            type: d.type,
+            severity: d.severity,
+            estimatedCost: d.estimatedCost,
+            confidence: d.confidence,
+          })),
+          totalEstimate: assessment.totalEstimate,
+          aiConfidence: assessment.aiConfidence,
+          overallSeverity: assessment.overallSeverity,
+        },
+        agentModifications: {
+          costAdjustments: final.adjustments.map(adj => ({
+            damageIndex: adj.damageIndex,
+            originalCost: adj.originalCost,
+            adjustedCost: adj.adjustedCost,
+            reason: adj.reason,
+          })),
+          removedItems: [], // Track removed items if available
+          addedNotes: final.agentNotes,
+          finalTotal: final.adjustedTotal,
+        },
+        interactionType: 'agent_reviewed',
+        reviewTimeSeconds,
+        agentId: final.approvedBy,
+      });
+    }
+
+    setCurrentStep('confirmation');
+  };
+
+  // Handle quick approval - bypasses agent review entirely
+  const handleQuickApprove = (result: AssessmentResult) => {
+    setAssessment(result);
+
+    // Create a final assessment automatically
+    const autoFinalAssessment: FinalAssessment = {
+      assessment: result,
+      agentNotes: 'Auto-approved: High confidence assessment within standard authorization limits.',
+      adjustedTotal: result.totalEstimate,
+      adjustments: [],
+      approvedBy: 'System (Auto-Approved)',
+      approvalLevel: 'agent',
+      approvedAt: new Date(),
+    };
+
+    // Record feedback for auto-approved claims
+    recordFeedback({
+      claimId: result.claimId,
+      aiAssessment: {
+        damages: result.damages.map(d => ({
+          area: d.area,
+          type: d.type,
+          severity: d.severity,
+          estimatedCost: d.estimatedCost,
+          confidence: d.confidence,
+        })),
+        totalEstimate: result.totalEstimate,
+        aiConfidence: result.aiConfidence,
+        overallSeverity: result.overallSeverity,
+      },
+      agentModifications: {
+        costAdjustments: [],
+        removedItems: [],
+        addedNotes: autoFinalAssessment.agentNotes,
+        finalTotal: result.totalEstimate,
+      },
+      interactionType: 'auto_approved',
+      reviewTimeSeconds: 0,
+      agentId: 'System (Auto-Approved)',
+    });
+
+    setFinalAssessment(autoFinalAssessment);
     setCurrentStep('confirmation');
   };
 
@@ -164,6 +250,7 @@ export default function Home() {
               claimData={claimData}
               images={images}
               onContinue={handleAssessmentComplete}
+              onQuickApprove={handleQuickApprove}
               onBack={() => setCurrentStep('upload')}
               mode={aiMode}
             />
@@ -184,6 +271,7 @@ export default function Home() {
               claimData={claimData}
               finalAssessment={finalAssessment}
               onNewClaim={handleNewClaim}
+              processingTime={assessment?.processingTime}
             />
           )}
         </div>

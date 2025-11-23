@@ -36,8 +36,10 @@ export default function AgentReview({ claimData, images, assessment, onApprove, 
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
 
-  const adjustedTotal = adjustedDamages.reduce((sum, d) => sum + d.estimatedCost, 0) + assessment.laborHours * 85;
-  const requiresSeniorApproval = adjustedTotal > 2000 || assessment.overallSeverity === 'Severe';
+  // Labor is already included in each item's estimatedCost
+  const adjustedTotal = adjustedDamages.reduce((sum, d) => sum + d.estimatedCost, 0);
+  const SENIOR_APPROVAL_THRESHOLD = 5000;
+  const requiresSeniorApproval = adjustedTotal > SENIOR_APPROVAL_THRESHOLD || assessment.overallSeverity === 'Severe';
 
   const handleCostAdjust = (index: number, newCost: number) => {
     const updated = [...adjustedDamages];
@@ -146,7 +148,15 @@ export default function AgentReview({ claimData, images, assessment, onApprove, 
           <tbody className="divide-y">
             {adjustedDamages.map((damage, index) => (
               <tr key={index} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">{damage.area}</td>
+                <td className="px-4 py-3">
+                  <div className="font-medium text-gray-900">{damage.area}</div>
+                  {/* Parts & Labor breakdown */}
+                  {(damage.partsCost !== undefined || damage.laborHours !== undefined) && (
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      Parts: ${(damage.partsCost || 0).toLocaleString()} | Labor: {damage.laborHours || 0}h @ ${damage.laborRate || 115}/hr
+                    </div>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-gray-700">{damage.type}</td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-1 rounded ${
@@ -183,21 +193,29 @@ export default function AgentReview({ claimData, images, assessment, onApprove, 
                 </td>
               </tr>
             ))}
-            <tr className="bg-gray-50">
-              <td className="px-4 py-3 font-medium text-gray-900">Labor</td>
-              <td className="px-4 py-3 text-gray-700" colSpan={3}>
-                {assessment.laborHours} hours @ $85/hr
-              </td>
-              <td className="px-4 py-3 text-right font-medium text-gray-900">
-                ${(assessment.laborHours * 85).toLocaleString()}
-              </td>
-            </tr>
+            {/* Labor Summary Row */}
+            {assessment.laborHours > 0 && (
+              <tr className="bg-blue-50/50">
+                <td className="px-4 py-2 text-sm text-gray-600" colSpan={4}>
+                  Total Labor: {assessment.laborHours.toFixed(1)} hours @ $115/hr
+                </td>
+                <td className="px-4 py-2 text-right font-medium text-gray-700">
+                  ${(assessment.laborHours * 115).toLocaleString()}
+                </td>
+              </tr>
+            )}
           </tbody>
           <tfoot>
             <tr className="bg-blue-50">
               <td className="px-4 py-3 font-semibold text-gray-900" colSpan={4}>Total Estimate</td>
               <td className="px-4 py-3 text-right text-xl font-bold text-blue-600">
                 ${adjustedTotal.toLocaleString()}
+              </td>
+            </tr>
+            <tr className="bg-gray-50">
+              <td className="px-4 py-2 text-center text-sm text-gray-500" colSpan={5}>
+                Expected range: ${Math.round(adjustedTotal * 0.85).toLocaleString()} – ${Math.round(adjustedTotal * 1.15).toLocaleString()}
+                <span className="text-xs text-gray-400 ml-1">(±15%)</span>
               </td>
             </tr>
           </tfoot>
@@ -246,7 +264,7 @@ export default function AgentReview({ claimData, images, assessment, onApprove, 
             <span>Senior Adjuster Approval Required</span>
           </div>
           <p className="text-sm text-amber-700 mt-1">
-            {adjustedTotal > 2000 && 'Estimate exceeds $2,000 threshold. '}
+            {adjustedTotal > SENIOR_APPROVAL_THRESHOLD && `Estimate exceeds $${SENIOR_APPROVAL_THRESHOLD.toLocaleString()} threshold. `}
             {assessment.overallSeverity === 'Severe' && 'Severe damage classification requires senior review.'}
           </p>
         </div>

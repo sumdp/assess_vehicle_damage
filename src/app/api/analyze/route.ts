@@ -13,6 +13,13 @@ interface DamageItem {
   confidence: number;
 }
 
+interface InconsistencyFlag {
+  type: 'color_mismatch' | 'model_mismatch' | 'multiple_vehicles' | 'vin_mismatch' | 'other';
+  description: string;
+  severity: 'warning' | 'critical';
+  confidence: number;
+}
+
 interface AnalysisResult {
   hasDamage: boolean;
   damages: DamageItem[];
@@ -23,6 +30,9 @@ interface AnalysisResult {
   aiConfidence: number;
   recommendations: string[];
   summary: string;
+  // Fraud/inconsistency detection
+  hasInconsistencies: boolean;
+  inconsistencies: InconsistencyFlag[];
 }
 
 export async function POST(request: NextRequest) {
@@ -47,7 +57,7 @@ export async function POST(request: NextRequest) {
       },
     }));
 
-    const systemPrompt = `You are an expert automotive damage assessor for an insurance company. Your job is to analyze vehicle damage photos and provide accurate assessments.
+    const systemPrompt = `You are an expert automotive damage assessor for an insurance company. Your job is to analyze vehicle damage photos, provide accurate assessments, AND detect potential fraud or inconsistencies.
 
 You must respond with ONLY valid JSON in this exact format (no markdown, no explanation):
 {
@@ -65,10 +75,30 @@ You must respond with ONLY valid JSON in this exact format (no markdown, no expl
   "overallSeverity": "None" | "Minor" | "Moderate" | "Severe",
   "laborHours": number (estimated repair hours),
   "partsRequired": ["list of parts that may need replacement"],
-  "recommendations": ["list of 2-3 recommendations for the claims agent"]
+  "recommendations": ["list of 2-3 recommendations for the claims agent"],
+  "hasInconsistencies": boolean,
+  "inconsistencies": [
+    {
+      "type": "color_mismatch" | "model_mismatch" | "multiple_vehicles" | "vin_mismatch" | "other",
+      "description": "Clear description of what was detected",
+      "severity": "warning" | "critical",
+      "confidence": number (0-100)
+    }
+  ]
 }
 
-Guidelines:
+FRAUD/INCONSISTENCY DETECTION (IMPORTANT):
+When analyzing multiple images, carefully check for:
+- Different vehicle colors across photos (color_mismatch) - CRITICAL if obvious
+- Different vehicle makes/models across photos (model_mismatch) - CRITICAL
+- Photos clearly showing different vehicles (multiple_vehicles) - CRITICAL
+- Vehicle doesn't match the claimed make/model/year (vin_mismatch) - WARNING or CRITICAL
+- Any other suspicious inconsistencies (other)
+
+Set hasInconsistencies to true if ANY inconsistencies are detected. Even if damage is present, flag inconsistencies.
+For critical inconsistencies, add a recommendation to halt processing and investigate.
+
+DAMAGE ASSESSMENT Guidelines:
 - If the vehicle shows NO damage (new car, clean condition), set hasDamage to false and return empty damages array
 - Be conservative with estimates - real repair costs for reference:
   - Minor scratch/scuff: $150-400
