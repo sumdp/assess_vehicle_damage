@@ -1,36 +1,166 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ClaimAssist AI
+
+An AI-powered vehicle damage assessment prototype for insurance claims processing. Built with Next.js and Claude Vision API.
+
+## Overview
+
+ClaimAssist AI streamlines the insurance claims workflow by:
+
+- Allowing claims agents to capture policy and vehicle information
+- Uploading and processing vehicle damage photos
+- Using AI (Claude Vision) to analyze damage and generate cost estimates
+- Supporting human-in-the-loop review for low-confidence assessments
+- Enabling agent review, cost adjustments, and approval routing
+
+## Features
+
+- **Smart Claim Form**: Dropdown selectors for vehicle make/model/year with 16+ manufacturers
+- **Drag-and-Drop Image Upload**: Supports JPG, PNG, HEIC, AVIF (auto-converts unsupported formats)
+- **AI Damage Assessment**: Real-time analysis using Claude Vision API
+- **Transparent AI Confidence**: Per-damage confidence scores with visual indicators
+- **Manual Override System**: Checkbox toggle to adjust AI-estimated costs with reason tracking
+- **Human-in-the-Loop**: Interactive damage marking when AI confidence is low (<70%)
+- **Test/Live Mode Toggle**: Switch between simulated responses and live API calls
+- **Test Mode Controls**: Configurable confidence, severity, and damage detection for testing
+- **Agent Review Dashboard**: Adjust costs, add notes, view damage breakdown
+- **Approval Routing**: Automatic escalation for high-value claims (>$2,000) or severe damage
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **AI**: Anthropic Claude Vision API
+- **Runtime**: React 19
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+
+- npm or yarn
+- Anthropic API key ([Get one here](https://console.anthropic.com/))
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd assess-vehicular_damage
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+4. Add your Anthropic API key to `.env.local`:
+   ```
+   ANTHROPIC_API_KEY=your_api_key_here
+   ```
+
+### Running the App
+
+**Development mode:**
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+**Production build:**
+```bash
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Usage
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Live Mode (Default)
+1. Toggle to "Live" in the header
+2. Fill out the claim form with policy and vehicle details
+3. Upload damage photos (supports multiple images)
+4. AI analyzes images and generates damage assessment
+5. Review and adjust costs as needed
+6. Approve or escalate the claim
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Test Mode
+1. Toggle to "Test" in the header (shows "Demo Mode" badge)
+2. Use test controls on the assessment page:
+   - **Damage Toggle**: Enable/disable damage detection
+   - **Confidence Slider**: Set AI confidence (below 70% triggers human input)
+   - **Severity Selector**: Choose Minor/Moderate/Severe
+3. Experience the full workflow with simulated data
 
-## Learn More
+### Human-in-the-Loop Flow
+When AI confidence is below 70%:
+1. You'll see a prompt to mark damage locations
+2. Click on the image(s) to place numbered markers
+3. Submit markers to re-analyze with improved accuracy
+4. Or skip to use the original AI assessment
 
-To learn more about Next.js, take a look at the following resources:
+### Manual Override for Cost Adjustments
+Each damage item in the assessment shows:
+1. **Confidence Score**: Visual indicator (green/blue/amber/red) showing AI certainty
+2. **Manual Override Checkbox**: Enable to adjust the AI-estimated cost
+3. **Adjusted Cost Input**: Enter the corrected amount
+4. **Reason Field**: Document why the adjustment was made
+5. **Agent Notes**: Global notes section for audit purposes (appears when any override is active)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Overrides are carried through to the Agent Review step and tracked for transparency.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+├── app/
+│   ├── api/
+│   │   └── analyze/
+│   │       └── route.ts      # Claude Vision API endpoint
+│   ├── layout.tsx            # Root layout
+│   └── page.tsx              # Main workflow orchestrator
+├── components/
+│   ├── ClaimForm.tsx         # Policy & vehicle info form
+│   ├── ImageUploader.tsx     # Drag-drop image upload
+│   ├── DamageAssessment.tsx  # AI analysis & human feedback
+│   ├── AgentReview.tsx       # Cost adjustment & approval
+│   └── ClaimConfirmation.tsx # Success & next steps
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Configuration
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `ANTHROPIC_API_KEY` | Your Anthropic API key | Yes (for Live mode) |
+
+### Thresholds
+
+- **Low Confidence Threshold**: 70% (triggers human input request)
+- **Senior Approval Threshold**: $2,000 or Severe damage classification
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import project in [Vercel](https://vercel.com)
+3. Add `ANTHROPIC_API_KEY` environment variable
+4. Deploy
+
+### Other Platforms
+
+The app is a standard Next.js application and can be deployed to any platform supporting Node.js:
+- AWS Amplify
+- Railway
+- Render
+- Self-hosted with `npm run build && npm start`
+
+## License
+
+MIT
