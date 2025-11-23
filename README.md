@@ -142,7 +142,7 @@ src/
 ### Thresholds
 
 - **Low Confidence Threshold**: 70% (triggers human input request)
-- **Senior Approval Threshold**: $2,000 or Severe damage classification
+- **Senior Approval Threshold**: $5,000 or Severe damage classification
 
 ## Deployment
 

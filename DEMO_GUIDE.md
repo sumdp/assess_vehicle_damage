@@ -115,7 +115,7 @@ Open http://localhost:3000 - Test mode works without an API key.
 - Show the confirmation screen
 
 **What to highlight:**
-- Claims over $2,000 or with severe damage auto-flag for senior review
+- Claims over $5,000 or with severe damage auto-flag for senior review
 - Complete audit trail visible
 - Next steps clearly displayed
 

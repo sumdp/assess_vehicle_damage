@@ -51,7 +51,7 @@ Get an API key at https://console.anthropic.com/
 
 - **Low confidence flow**: In test mode, set confidence below 70% to trigger human-in-the-loop markup
 - **Manual override**: Toggle override checkbox on any damage item to adjust costs
-- **High-value escalation**: Claims over $2,000 or with severe damage route to senior adjuster
+- **High-value escalation**: Claims over $5,000 or with severe damage route to senior adjuster
 
 ## Troubleshooting
 
