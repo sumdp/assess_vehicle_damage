@@ -2,7 +2,7 @@
 
 An AI-powered vehicle damage assessment prototype for insurance claims processing. Built with Next.js and Claude Vision API.
 
-=======================================================================================================
+====================================================================================
 # Quick Start
 
 Get ClaimAssist AI running in under 2 minutes.
@@ -66,7 +66,7 @@ Get an API key at https://console.anthropic.com/
 | Port in use | Kill process on 3000 or use `npm run dev -- -p 3001` |
 | Images not uploading | Check file format (JPG, PNG, HEIC, AVIF supported) |
 
-=======================================================================================================
+====================================================================================
 ## ClaimAssist Overview
 
 ClaimAssist AI streamlines the insurance claims workflow by:
